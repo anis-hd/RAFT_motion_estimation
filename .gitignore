@@ -1,4 +1,6 @@
 flow_code/
 test/
 train/
+bundler/
+data/
 *.mp4
