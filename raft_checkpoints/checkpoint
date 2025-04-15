@@ -1,8 +1,2 @@
-model_checkpoint_path: "ckpt-141712"
-all_model_checkpoint_paths: "ckpt-140670"
-all_model_checkpoint_paths: "ckpt-141191"
-all_model_checkpoint_paths: "ckpt-141712"
-all_model_checkpoint_timestamps: 1744368311.1351485
-all_model_checkpoint_timestamps: 1744368450.8227715
-all_model_checkpoint_timestamps: 1744368590.5406454
-last_preserved_timestamp: 1744313136.406828
+model_checkpoint_path: "raft_tf_checkpoint"
+all_model_checkpoint_paths: "raft_tf_checkpoint"

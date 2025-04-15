@@ -14,8 +14,8 @@ tf.keras.mixed_precision.set_global_policy('mixed_float16')
 IMG_HEIGHT = 384
 IMG_WIDTH = 512
 BATCH_SIZE = 2
-EPOCHS = 400 # Total desired epochs
-LEARNING_RATE = 1e-5
+EPOCHS = 1000 # Total desired epochs
+LEARNING_RATE = 1e-4
 NUM_ITERATIONS = 8
 DATA_DIR = './train'
 CHECKPOINT_DIR = './raft_checkpoints'
@@ -726,16 +726,24 @@ def train_step(images, flow_gt):
     with tf.GradientTape() as tape:
         flow_predictions = raft_model([image1, image2], training=True)
         loss = raft_loss(flow_gt, flow_predictions)
-        scaled_loss = loss # Modify if using LossScaleOptimizer
-        # scaled_loss = optimizer.get_scaled_loss(loss) if isinstance(optimizer, tf.keras.mixed_precision.LossScaleOptimizer) else loss
+        # scaled_loss = loss # Modify if using LossScaleOptimizer
+        # --- MODIFICATION START ---
+        # Scale the loss using the optimizer before computing gradients
+        scaled_loss = optimizer.get_scaled_loss(loss) if isinstance(optimizer, tf.keras.mixed_precision.LossScaleOptimizer) else loss
+        # --- MODIFICATION END ---
 
+    # Compute gradients using the scaled loss
     gradients = tape.gradient(scaled_loss, raft_model.trainable_variables)
-    # gradients = optimizer.get_unscaled_gradients(gradients) if isinstance(optimizer, tf.keras.mixed_precision.LossScaleOptimizer) else gradients
+    # --- MODIFICATION START ---
+    # Unscale the gradients before clipping or applying them
+    gradients = optimizer.get_unscaled_gradients(gradients) if isinstance(optimizer, tf.keras.mixed_precision.LossScaleOptimizer) else gradients
+    # --- MODIFICATION END ---
     gradients = [(tf.clip_by_norm(g, 1.0) if g is not None else None) for g in gradients]
 
     trainable_vars = raft_model.trainable_variables
     valid_grads_and_vars = [(g, v) for g, v in zip(gradients, trainable_vars) if g is not None]
 
+    # Apply the unscaled gradients
     optimizer.apply_gradients(valid_grads_and_vars)
 
     # Calculate EPE on the final prediction for monitoring
@@ -745,6 +753,7 @@ def train_step(images, flow_gt):
     else:
       final_epe = tf.constant(0.0, dtype=tf.float32)
 
+    # Return the original (unscaled) loss for logging
     return loss, final_epe
 
 
